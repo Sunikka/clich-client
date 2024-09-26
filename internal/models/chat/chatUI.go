@@ -28,6 +28,7 @@ var (
 	primaryStyle   = lipgloss.NewStyle().Foreground(primaryColor)
 	secondaryStyle = lipgloss.NewStyle().Foreground(secondaryColor)
 	highlightStyle = lipgloss.NewStyle().Foreground(highlightColor)
+	borderStyle    = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(1).BorderStyle(lipgloss.HiddenBorder())
 )
 
 type wsMsg struct {
@@ -76,7 +77,6 @@ func InitialModel(ws *websocket.Conn) Model {
 		viewport:       vp,
 		senderStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("36")),
 		recipientStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("5")),
-		ws:             ws,
 		err:            nil,
 	}
 }
@@ -137,7 +137,7 @@ func (m Model) View() string {
 		log.Println("Error loading the ascii art: ", err)
 	}
 
-	return fmt.Sprintf(`
+	view := fmt.Sprintf(`
 %s
 
 
@@ -148,4 +148,7 @@ func (m Model) View() string {
 		m.viewport.View(),
 		m.textarea.View(),
 	)
+
+	return borderStyle.Width(50).Render(view)
+
 }

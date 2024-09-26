@@ -6,7 +6,9 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/sunikka/clich-client/internal/auth"
 	viewTypes "github.com/sunikka/clich-client/internal/models"
+	"github.com/sunikka/clich-client/internal/models/logging"
 )
 
 type (
@@ -19,6 +21,7 @@ type elementType int
 const (
 	inputElement elementType = iota
 	buttonElement
+	logElement
 )
 
 const (
@@ -27,6 +30,10 @@ const (
 	login = iota
 	guestLogin
 	register
+)
+
+const (
+	marginLeft = 20
 )
 
 // Styling
@@ -40,6 +47,9 @@ var (
 	inputStyle     = lipgloss.NewStyle().Foreground(primaryColor)
 	continueStyle  = lipgloss.NewStyle().Foreground(secondaryColor)
 	highlightStyle = lipgloss.NewStyle().Foreground(highlightColor)
+	borderStyle    = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(1).BorderStyle(lipgloss.HiddenBorder())
+	marginStyle    = lipgloss.NewStyle().MarginRight(marginLeft)
+	paddingStyle   = lipgloss.NewStyle().PaddingRight(3).PaddingLeft(3)
 )
 
 // TODO: Maybe turn menu buttons into their own Tea Model?
@@ -50,12 +60,15 @@ type UIElement struct {
 }
 
 type Model struct {
-	Elements []UIElement
-	Focused  int
-	Err      error
+	Elements     []UIElement
+	LogWindow    logging.Model
+	WindowHeight int
+	logMessages  []string
+	Focused      int
+	Err          error
 }
 
-func InitialModel() Model {
+func InitialModel(windowHeight int) Model {
 	elements := make([]UIElement, 5)
 
 	usernameInput := textinput.New()
@@ -79,9 +92,10 @@ func InitialModel() Model {
 	elements[register] = UIElement{Type: buttonElement, ButtonText: registerBtn}
 
 	return Model{
-		Elements: elements,
-		Focused:  0,
-		Err:      nil,
+		Elements:     elements,
+		Focused:      0,
+		WindowHeight: windowHeight,
+		Err:          nil,
 	}
 }
 
@@ -105,7 +119,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// If on the last field, submit login (move on to next view)
 			// otherwise move to the next field
 			if m.Focused == login {
-				return m, func() tea.Msg { return viewTypes.SwitchViewMsg{State: viewTypes.ChatView} }
+				//return m, func() tea.Msg { return viewTypes.SwitchViewMsg{State: viewTypes.ChatView} }
+				uname := m.Elements[username].TextInput.Value()
+				pw := m.Elements[password].TextInput.Value()
+				return m, func() tea.Msg { return auth.LoginRequest{Username: uname, Password: pw} }
+
 			}
 			if m.Focused == guestLogin {
 				username := m.Elements[username].TextInput.Value()
@@ -148,6 +166,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
+	formWidth := 50
 
 	// TODO: Clean up the highlighting code
 	loginBtn := continueStyle.Width(20).Render(m.Elements[login].ButtonText)
@@ -166,8 +185,7 @@ func (m Model) View() string {
 	}
 
 	// Add fields and titles
-	view := fmt.Sprintf(`
-	%s
+	view := fmt.Sprintf(`%s
 
 
 	%s
@@ -179,18 +197,29 @@ func (m Model) View() string {
 	%s
 	%s
 	%s
+
+
+
+
+
 		`,
 
-		inputStyle.Width(50).Render("---------------- Login to CLICH ----------------"),
-		inputStyle.Width(45).Render("Username"),
+		inputStyle.Width(formWidth).Render("---------------- Login to CLICH ----------------"),
+		inputStyle.Width(formWidth-5).Render("Username"),
 		m.Elements[username].TextInput.View(),
-		inputStyle.Width(45).Render("Password"),
+		inputStyle.Width(formWidth-5).Render("Password"),
 		m.Elements[password].TextInput.View(),
 		loginBtn,
 		guestLoginBtn,
 		registerBtn)
-	view += continueStyle.Width(50).Render("\n\n Press ESC or CTRL+C to exit... \n")
-	return view
+	view += continueStyle.Width(formWidth).Render("\n\n Press ESC or CTRL+C to exit... \n")
+
+	// Add styles (margin & border)
+	view = paddingStyle.Width(formWidth).Render(view)
+	view = marginStyle.Width(formWidth).Render(view)
+	view = borderStyle.Width(formWidth).Render(view)
+
+	return borderStyle.Width(formWidth + marginLeft).Height(m.WindowHeight).Render(view)
 }
 
 func (m *Model) nextInput() {
