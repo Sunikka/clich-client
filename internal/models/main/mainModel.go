@@ -1,6 +1,8 @@
 package mainModel
 
 import (
+	"fmt"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/sunikka/clich-client/internal/auth"
@@ -8,17 +10,16 @@ import (
 	chatUI "github.com/sunikka/clich-client/internal/models/chat"
 	"github.com/sunikka/clich-client/internal/models/logging"
 	loginUI "github.com/sunikka/clich-client/internal/models/login"
-	"golang.org/x/net/websocket"
+	"github.com/sunikka/clich-client/internal/utils"
 )
 
 var p *tea.Program
 
 type MainModel struct {
-	app    *tea.Program
-	state  viewTypes.SessionState
-	login  tea.Model
-	chat   tea.Model
-	wsConn *websocket.Conn
+	app   *tea.Program
+	state viewTypes.SessionState
+	login tea.Model
+	chat  chatUI.ChatModel
 
 	logger logging.Model
 
@@ -28,10 +29,12 @@ type MainModel struct {
 	loggedIn bool
 }
 
-func NewMainModel() tea.Model {
+func NewMainModel(app *tea.Program) tea.Model {
 
 	return MainModel{
+		app:    app,
 		state:  viewTypes.LoginView,
+		chat:   chatUI.NewChatModel(),
 		login:  loginUI.InitialModel(20),
 		logger: logging.NewLogWindow(100, 20),
 	}
@@ -54,20 +57,39 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.logger.Log("Login Request sent"), auth.SendLoginRequestCmd(msg.Username, msg.Password))
 
 	case auth.LoginSuccess:
-		cmds = append(cmds,
-			m.establishChatConnection(),
-			m.startMsgHandler(),
-			m.SwitchView(viewTypes.ChatView),
-		)
-
 		m.username = msg.Username
 		m.token = msg.Token
 		m.loggedIn = true
+		chatWithConn, cmd := m.chat.Connect(m.username)
+		m.chat = chatWithConn
+		m.chat.Username = msg.Username
+		cmds = append(cmds,
+			m.logger.Log(fmt.Sprintf("Login succesful, welcome %s!", msg.Username)),
+			m.SwitchView(viewTypes.ChatView),
+			cmd,
+		)
 
 	case auth.LoginFailure:
 		cmds = append(cmds, m.logger.Log(msg.Error))
-	case WsConnected:
-		cmds = append(cmds, m.logger.Log("Websocket connected!"))
+
+	case chatUI.WsConnected:
+		updatedChat, cmd := m.chat.Update(msg)
+		m.chat = updatedChat.(chatUI.ChatModel)
+		cmds = append(cmds, m.logger.Log("Connection established!"), cmd)
+
+		startMsgHandlerCmd := m.chat.StartMsgHandler()
+		cmds = append(cmds, startMsgHandlerCmd)
+	case chatUI.WsErr:
+		cmds = append(cmds, m.logger.Log(fmt.Sprintf("Websocket connection failed: %v", msg.ErrMsg)))
+
+	case utils.Message:
+		// updatedChat, _ := m.chat.Update(msg)
+		// m.chat = updatedChat.(chatUI.ChatModel)
+
+		cmds = append(cmds, m.logger.Log(fmt.Sprintf("Message received from %s", msg.Username)))
+
+	case logging.LogRequest:
+		cmds = append(cmds, m.logger.Log(msg.LogText))
 	}
 
 	switch m.state {
@@ -77,7 +99,8 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 
 	case viewTypes.ChatView:
-		m.chat, cmd = m.chat.Update(msg)
+		updatedChat, cmd := m.chat.Update(msg)
+		m.chat = updatedChat.(chatUI.ChatModel)
 		cmds = append(cmds, cmd)
 	}
 
@@ -85,7 +108,6 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	updatedLogger, cmd := m.logger.Update(msg)
 	m.logger = updatedLogger.(logging.Model)
 	cmds = append(cmds, cmd)
-
 	return m, tea.Batch(cmds...)
 }
 
@@ -94,13 +116,11 @@ func (m MainModel) View() string {
 
 	switch m.state {
 	case viewTypes.ChatView:
-		m.chat = chatUI.InitialModel(m.wsConn)
-		return m.chat.View()
+		//	return m.chat.View()
+		return lipgloss.JoinHorizontal(lipgloss.Top, m.chat.View(), logView)
 	default:
-		//		return m.login.View()
 		return lipgloss.JoinHorizontal(lipgloss.Top, m.login.View(), logView)
 	}
-
 }
 
 func (m MainModel) SwitchView(view viewTypes.SessionState) tea.Cmd {

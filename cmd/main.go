@@ -8,18 +8,17 @@ import (
 	mainUI "github.com/sunikka/clich-client/internal/models/main"
 )
 
-var testNames = []string{"Paavo", "Gigachad", "Harold", "Taavi", "MogBot"}
-
 func main() {
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal(err)
 	}
-	app := tea.NewProgram(mainUI.NewMainModel(), tea.WithAltScreen())
 
-	// Sends client info as a JSON for now
-	// To be switched to just a JWT token for authenticating and fetching the user info on server-side
-	// when the login system and db has been implemented...
+	// The mainModel needs to reference the app, which is why it has to be initialized this way
+	app := tea.NewProgram(mainUI.NewMainModel(nil))
+	mainModel := mainUI.NewMainModel(app)
+
+	app = tea.NewProgram(mainModel, tea.WithAltScreen())
 
 	_, err = app.Run()
 	if err != nil {

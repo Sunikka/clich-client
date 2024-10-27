@@ -11,21 +11,11 @@ A chat application in Go, where your terminal serves as the interface! The proje
   - Messages of the connected clients are rendered into the UI
 
 ## Working on (Core functionalities):
-
-- Multiple chat instances. Every client currently connects to the same chat room
-- Protobuf message objects. Currently only the message is sent as a string and the server gets no other data. The client generates a random username when the message is rendered.
-
-## Planned features:
-
-- User Auth (JWT?)
-- 1-to-1 messaging
-- Maybe group chats eventually
-- Code blocks and an easy way to copy them from the chat
+  - Refactoring the code and returning functionality after moving to multirepo architecture. 
 
 ## Tech stack:
-
 - Go for frontend and backend
 - Charmbracelet/bubbletea CLI frontend
-- Websockets + Protobuf communication
+- Websockets + Protobuf communication (Protobuf to be implemented)
 
 ![alt text](login.png)

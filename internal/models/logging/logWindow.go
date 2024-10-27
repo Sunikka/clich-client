@@ -14,8 +14,14 @@ var (
 	borderStyle  = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(1).BorderStyle(lipgloss.HiddenBorder())
 )
 
-type logMsg struct {
-	logText string
+type LogMsg struct {
+	LogText string
+}
+
+// for reaching the main models logger from outside
+// e.g chatModel
+type LogRequest struct {
+	LogText string
 }
 
 type Model struct {
@@ -43,8 +49,8 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case logMsg:
-		m.Logs = append(m.Logs, msg.logText)
+	case LogMsg:
+		m.Logs = append(m.Logs, msg.LogText)
 
 		if len(m.Logs) > m.MaxLogs {
 			m.Logs = m.Logs[1:]
@@ -80,6 +86,12 @@ func (m Model) formatLogs() string {
 
 func (m Model) Log(logStr string) tea.Cmd {
 	return func() tea.Msg {
-		return logMsg{logText: logStr}
+		return LogMsg{LogText: logStr}
+	}
+}
+
+func SendLogReq(logStr string) tea.Cmd {
+	return func() tea.Msg {
+		return LogRequest{LogText: logStr}
 	}
 }

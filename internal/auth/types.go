@@ -7,7 +7,7 @@ type LoginRequest struct {
 
 type LoginSuccess struct {
 	Username string `json:"username"`
-	Token    string
+	Token    string `json:"token"`
 }
 
 type LoginFailure struct {

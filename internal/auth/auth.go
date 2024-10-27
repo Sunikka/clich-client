@@ -39,8 +39,8 @@ func SendLoginRequestCmd(username, password string) tea.Cmd {
 		if err != nil {
 			return LoginFailure{Error: fmt.Sprintf("Login failed: %v | %v", err, res.StatusCode)}
 		}
-
-		result := LoginSuccess{}
+		fmt.Print(string(resBody))
+		var result LoginSuccess
 		err = json.Unmarshal(resBody, &result)
 		if err != nil {
 			return LoginFailure{Error: fmt.Sprintf("Error parsing login response: %v", err)}
