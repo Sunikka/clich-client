@@ -1,6 +1,6 @@
 package utils
 
-import "github.com/google/uuid"
+import "time"
 
 type UserInfo struct {
 	ID     string
@@ -11,7 +11,8 @@ type UserInfo struct {
 }
 
 type Message struct {
-	SenderID uuid.UUID
+	// SenderID uuid.UUID
 	Username string
 	Content  string
+	SentAt   time.Time
 }

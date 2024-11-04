@@ -10,11 +10,13 @@ A chat application in Go, where your terminal serves as the interface! The proje
 - Some basic functionality implemented:
   - Messages of the connected clients are rendered into the UI
 
-## Working on (Core functionalities):
-  - Refactoring the code and returning functionality after moving to multirepo architecture. 
+## What I plan working on next (Core functionalities):
+  - Make the register button functional in the login screen (the backend endpoint is already implemented)
+  - Contacts/Friends system
+  - Chat rooms
 
 ## Tech stack:
-- Go for frontend and backend
+- Both frontend and backend are written in go
 - Charmbracelet/bubbletea CLI frontend
 - Websockets + Protobuf communication (Protobuf to be implemented)
 

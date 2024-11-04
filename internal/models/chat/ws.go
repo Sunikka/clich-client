@@ -3,7 +3,6 @@ package ChatModel
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -74,7 +73,6 @@ func (m ChatModel) Connect(username string) (ChatModel, tea.Cmd) {
 }
 
 func (m *ChatModel) StartMsgHandler() tea.Cmd {
-
 	if m.Ws == nil {
 		return func() tea.Msg {
 			return tea.Batch(
@@ -84,15 +82,15 @@ func (m *ChatModel) StartMsgHandler() tea.Cmd {
 		}
 	}
 
-	m.msgCh = make(chan string)
+	m.msgCh = make(chan []byte)
 
 	go func() {
 		defer close(m.msgCh)
 		for {
-			var msg string
+			var msg []byte
 			err := websocket.Message.Receive(m.Ws, &msg)
 			if err != nil {
-				// Add log channel later to log error
+				// TODO: Add log channel later to log error
 				fmt.Println(err)
 				continue
 			}
@@ -100,13 +98,7 @@ func (m *ChatModel) StartMsgHandler() tea.Cmd {
 		}
 	}()
 
-	// 	return func() tea.Msg { return utils.Message{Username: username, Content: "test message"} }
-
-	return m.TickMessageCheck()
-}
-
-func (m *ChatModel) testMsg(username string) tea.Cmd {
-	return func() tea.Msg { return utils.Message{Username: username, Content: "test message"} }
+	return nil
 }
 
 // tickMessageCheck schedules periodic polling of WebSocket messages using tea.Tick.
@@ -115,19 +107,58 @@ func (m *ChatModel) TickMessageCheck() tea.Cmd {
 	return tea.Tick(time.Millisecond*100, func(time.Time) tea.Msg {
 		select {
 		case msg, ok := <-m.msgCh:
-			log.Println("Message got in ticker")
 			if !ok {
 				// If the channel is closed, indicate WebSocket closure
 				return WsErr{ErrMsg: "WebSocket connection closed"}
 			}
 			// Return the received message as tea.Msg to the update loop
-			return tea.Batch(
-				func() tea.Msg { return utils.Message{Username: m.Username, Content: msg} },
-				m.TickMessageCheck(), // Schedule the next tick
-			)
+			// return utils.Message{Username: m.Username, Content: msg}
+			return m.ParseMessage(msg)
 		default:
-			return m.TickMessageCheck()
+			return nil
 		}
 
 	})
+}
+
+func (m ChatModel) SendMessage(msg string) error {
+	payload := Message{
+		Content: msg,
+		SentAt:  time.Now().UTC(),
+	}
+
+	payloadJSON, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	_, err = m.Ws.Write([]byte(payloadJSON))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m ChatModel) ParseMessage(buf []byte) tea.Msg {
+	var msgParsed MessageReceived
+
+	err := json.Unmarshal(buf, &msgParsed)
+	if err != nil {
+		return ReturnWsErr(err)
+	}
+
+	return utils.Message{Username: msgParsed.Sender, Content: msgParsed.Content, SentAt: msgParsed.SentAt}
+}
+
+// TODO: Replace this by protobuf
+type Message struct {
+	Content string    `json:"content"`
+	SentAt  time.Time `json:"sent_at"`
+}
+
+type MessageReceived struct {
+	Sender  string    `json:"sender"`
+	Content string    `json:"content"`
+	SentAt  time.Time `json:"sent_at"`
 }

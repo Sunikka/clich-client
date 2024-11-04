@@ -28,7 +28,6 @@ const (
 	username = iota
 	password
 	login = iota
-	guestLogin
 	register
 )
 
@@ -69,7 +68,7 @@ type Model struct {
 }
 
 func InitialModel(windowHeight int) Model {
-	elements := make([]UIElement, 5)
+	elements := make([]UIElement, 4)
 
 	usernameInput := textinput.New()
 	usernameInput.Placeholder = "username"
@@ -84,9 +83,6 @@ func InitialModel(windowHeight int) Model {
 
 	loginBtn := "Sign in"
 	elements[login] = UIElement{Type: buttonElement, ButtonText: loginBtn}
-
-	guestLoginBtn := "Enter as a guest"
-	elements[guestLogin] = UIElement{Type: buttonElement, ButtonText: guestLoginBtn}
 
 	registerBtn := "Sign up"
 	elements[register] = UIElement{Type: buttonElement, ButtonText: registerBtn}
@@ -113,8 +109,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case tea.KeyTab:
 			m.nextInput()
+			m.updateInputElement()
+
 		case tea.KeyShiftTab:
 			m.prevInput()
+			m.updateInputElement()
 		case tea.KeyEnter:
 			// If on the last field, submit login (move on to next view)
 			// otherwise move to the next field
@@ -125,31 +124,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, func() tea.Msg { return auth.LoginRequest{Username: uname, Password: pw} }
 
 			}
-			if m.Focused == guestLogin {
-				username := m.Elements[username].TextInput.Value()
-
-				return m, func() tea.Msg {
-					return viewTypes.SwitchViewMsg{
-						State:    viewTypes.ChatView,
-						Username: username,
-					}
-				}
-			}
 			if m.Focused == register {
 				return m, func() tea.Msg { return viewTypes.SwitchViewMsg{State: viewTypes.ChatView} }
 			}
 
 			m.nextInput()
-
-			for i := range m.Elements {
-				if m.Elements[i].Type == inputElement {
-					m.Elements[i].TextInput.Blur()
-				}
-			}
-
-			if m.Elements[m.Focused].Type == inputElement {
-				m.Elements[m.Focused].TextInput.Focus()
-			}
+			m.updateInputElement()
 		}
 	case errMsg:
 		m.Err = msg
@@ -173,12 +153,6 @@ func (m Model) View() string {
 	if m.Focused == login {
 		loginBtn = highlightStyle.Width(20).Render(m.Elements[login].ButtonText)
 	}
-
-	guestLoginBtn := continueStyle.Width(20).Render(m.Elements[guestLogin].ButtonText)
-	if m.Focused == guestLogin {
-		guestLoginBtn = highlightStyle.Width(20).Render(m.Elements[guestLogin].ButtonText)
-	}
-
 	registerBtn := continueStyle.Width(20).Render(m.Elements[register].ButtonText)
 	if m.Focused == register {
 		registerBtn = highlightStyle.Width(20).Render(m.Elements[register].ButtonText)
@@ -196,7 +170,6 @@ func (m Model) View() string {
 
 	%s
 	%s
-	%s
 
 
 
@@ -210,7 +183,6 @@ func (m Model) View() string {
 		inputStyle.Width(formWidth-5).Render("Password"),
 		m.Elements[password].TextInput.View(),
 		loginBtn,
-		guestLoginBtn,
 		registerBtn)
 	view += continueStyle.Width(formWidth).Render("\n\n Press ESC or CTRL+C to exit... \n")
 
@@ -223,7 +195,11 @@ func (m Model) View() string {
 }
 
 func (m *Model) nextInput() {
-	m.Focused = (m.Focused + 1) % len(m.Elements)
+	if m.Focused < len(m.Elements)-1 {
+		m.Focused = (m.Focused + 1) % len(m.Elements)
+	} else {
+		m.Focused = 0
+	}
 }
 
 func (m *Model) prevInput() {
@@ -232,4 +208,17 @@ func (m *Model) prevInput() {
 	if m.Focused < 0 {
 		m.Focused = len(m.Elements) - 1
 	}
+}
+
+func (m *Model) updateInputElement() {
+	for i := range m.Elements {
+		if m.Elements[i].Type == inputElement {
+			m.Elements[i].TextInput.Blur()
+		}
+	}
+
+	if m.Elements[m.Focused].Type == inputElement {
+		m.Elements[m.Focused].TextInput.Focus()
+	}
+
 }

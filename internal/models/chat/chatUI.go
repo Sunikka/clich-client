@@ -48,7 +48,7 @@ type ChatModel struct {
 	err            error
 	app            *tea.Program
 	Debug          *log.Logger
-	msgCh          chan string
+	msgCh          chan []byte
 }
 
 type (
@@ -111,10 +111,7 @@ func (m ChatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.connected == false {
 				return m, func() tea.Msg { return WsErr{ErrMsg: "No websocket connection"} }
 			}
-			_, err := m.Ws.Write([]byte(m.textarea.Value()))
-			if err != nil {
-				return m, func() tea.Msg { return WsErr{ErrMsg: "Writing to websocket failed"} }
-			}
+			m.SendMessage(m.textarea.Value())
 			cmds = append(cmds, logging.SendLogReq("Message sent!"))
 			m.viewport.SetContent(strings.Join(m.Messages, "\n"))
 			m.textarea.Reset()
@@ -122,9 +119,9 @@ func (m ChatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case utils.Message:
-		cmds = append(cmds, logging.SendLogReq("Message received!"))
-		m.Messages = append(m.Messages, m.senderStyle.Render(msg.Username+": ")+msg.Content)
+		formedMessage := fmt.Sprintf("%s %s", m.senderStyle.Render(msg.Username+": "), msg.Content)
 
+		m.Messages = append(m.Messages, formedMessage)
 		m.viewport.SetContent(strings.Join(m.Messages, "\n"))
 
 		m.viewport.GotoBottom()
@@ -135,6 +132,7 @@ func (m ChatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.connected {
+		// Poll for messages
 		cmds = append(cmds, m.TickMessageCheck())
 	}
 
