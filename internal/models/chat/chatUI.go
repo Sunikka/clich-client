@@ -132,7 +132,6 @@ func (m ChatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.connected {
-		// Poll for messages
 		cmds = append(cmds, m.TickMessageCheck())
 	}
 

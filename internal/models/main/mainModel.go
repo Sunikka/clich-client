@@ -52,6 +52,15 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case viewTypes.SwitchViewMsg:
 		m.state = viewTypes.SessionState(msg.State)
 
+	case auth.RegisterRequest:
+		cmds = append(cmds, m.logger.Log("Register Request sent"), auth.SendRegisterRequestCmd(msg.Username, msg.Password))
+
+	case auth.RegisterSuccess:
+		cmds = append(cmds, m.logger.Log(msg.Message))
+
+	case auth.RegisterFailure:
+		cmds = append(cmds, m.logger.Log(msg.Error))
+
 	case auth.LoginRequest:
 		// return m, tea.Batch(auth.SendLoginRequestCmd(msg.Username, msg.Password))
 		cmds = append(cmds, m.logger.Log("Login Request sent"), auth.SendLoginRequestCmd(msg.Username, msg.Password))
@@ -81,7 +90,6 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, startMsgHandlerCmd)
 	case chatUI.WsErr:
 		cmds = append(cmds, m.logger.Log(fmt.Sprintf("Websocket connection failed: %v", msg.ErrMsg)))
-
 	case utils.Message:
 		// updatedChat, _ := m.chat.Update(msg)
 		// m.chat = updatedChat.(chatUI.ChatModel)

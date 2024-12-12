@@ -7,7 +7,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/sunikka/clich-client/internal/auth"
-	viewTypes "github.com/sunikka/clich-client/internal/models"
 	"github.com/sunikka/clich-client/internal/models/logging"
 )
 
@@ -125,7 +124,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			}
 			if m.Focused == register {
-				return m, func() tea.Msg { return viewTypes.SwitchViewMsg{State: viewTypes.ChatView} }
+				uname := m.Elements[username].TextInput.Value()
+				pw := m.Elements[password].TextInput.Value()
+				return m, func() tea.Msg { return auth.RegisterRequest{Username: uname, Password: pw} }
 			}
 
 			m.nextInput()
@@ -146,6 +147,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
+	disclaimer := "DISCLAIMER: This is a test environment. There is no encryption for your messages. Do not use a password you use in other services and do not type anything sensitive in the chat!"
+
 	formWidth := 50
 
 	// TODO: Clean up the highlighting code
@@ -172,8 +175,7 @@ func (m Model) View() string {
 	%s
 
 
-
-
+%s
 
 		`,
 
@@ -183,7 +185,8 @@ func (m Model) View() string {
 		inputStyle.Width(formWidth-5).Render("Password"),
 		m.Elements[password].TextInput.View(),
 		loginBtn,
-		registerBtn)
+		registerBtn,
+		disclaimer)
 	view += continueStyle.Width(formWidth).Render("\n\n Press ESC or CTRL+C to exit... \n")
 
 	// Add styles (margin & border)

@@ -66,7 +66,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) View() string {
 	logView := paddingStyle.Render(m.formatLogs())
 
-	return borderStyle.Width(m.WindowWidth).Height(m.WindowHeight).Render(logView)
+	return borderStyle.Width(m.WindowWidth / 2).Height(m.WindowHeight).Render(logView)
 }
 
 func (m Model) formatLogs() string {

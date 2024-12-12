@@ -3,6 +3,8 @@ package ChatModel
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"log"
 	"os"
 	"time"
 
@@ -90,6 +92,11 @@ func (m *ChatModel) StartMsgHandler() tea.Cmd {
 			var msg []byte
 			err := websocket.Message.Receive(m.Ws, &msg)
 			if err != nil {
+				// TODO: Handle this more gracefully
+				if err == io.EOF {
+					log.Fatal("Websocket connection closed by server")
+				}
+
 				// TODO: Add log channel later to log error
 				fmt.Println(err)
 				continue
