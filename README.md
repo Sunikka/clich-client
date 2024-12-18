@@ -4,14 +4,15 @@ A chat application in Go, where your terminal serves as the interface! The proje
 
 ![alt text](chat_view.png)
 ## Implemented
-
-- Bubbletea frontend UI base (Used the example from their github for starting the project out, so I can test my backend which I am focusing on first. I'm planning to customize the UI a lot later on)
-- Basic websocket server
 - Some basic functionality implemented:
   - Messages of the connected clients are rendered into the UI
+  - Working login system (even though far from complete)
+- Custom themes (Fetched from ~/.config/clich/default_theme.yml)
+  - Planning to implement a theme switcher inside the app, but currently the colors can be switched by adjusting the values inside the default_theme YAML file.
+
+
 
 ## What I plan working on next (Core functionalities):
-  - Make the register button functional in the login screen (the backend endpoint is already implemented)
   - Contacts/Friends system
   - Chat rooms
 

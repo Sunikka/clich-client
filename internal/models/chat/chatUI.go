@@ -12,22 +12,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/sunikka/clich-client/internal/models/logging"
+	"github.com/sunikka/clich-client/internal/theme"
 	"github.com/sunikka/clich-client/internal/utils"
 	"golang.org/x/net/websocket"
-)
-
-// Styling
-const (
-	primaryColor   = lipgloss.Color("#32CD32")
-	secondaryColor = lipgloss.Color("#767676")
-	highlightColor = lipgloss.Color("#FFFFFF")
-)
-
-var (
-	primaryStyle   = lipgloss.NewStyle().Foreground(primaryColor)
-	secondaryStyle = lipgloss.NewStyle().Foreground(secondaryColor)
-	highlightStyle = lipgloss.NewStyle().Foreground(highlightColor)
-	borderStyle    = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(1).BorderStyle(lipgloss.HiddenBorder())
 )
 
 type wsMsg struct {
@@ -49,13 +36,17 @@ type ChatModel struct {
 	app            *tea.Program
 	Debug          *log.Logger
 	msgCh          chan []byte
+	theme          *theme.Theme
+	styles         []lipgloss.Style
 }
 
 type (
 	errMsg error
 )
 
-func NewChatModel() ChatModel {
+func NewChatModel(theme *theme.Theme) ChatModel {
+	styles := applyStyles(theme)
+
 	ta := textarea.New()
 	ta.Placeholder = "Send a message..."
 	ta.Focus()
@@ -71,7 +62,7 @@ func NewChatModel() ChatModel {
 	ta.ShowLineNumbers = false
 
 	vp := viewport.New(80, 20)
-	vp.SetContent(secondaryStyle.Render(fmt.Sprintf("Welcome to the global chat!\nType a message and press enter to send.")))
+	vp.SetContent(styles[secondaryStyle].Render(fmt.Sprintf("Welcome to the global chat!\nType a message and press enter to send.")))
 
 	ta.KeyMap.InsertNewline.SetEnabled(false)
 	return ChatModel{
@@ -83,6 +74,8 @@ func NewChatModel() ChatModel {
 		connected:      false,
 		err:            nil,
 		Debug:          log.New(os.Stderr, "DEBUG: ", log.Lshortfile|log.LstdFlags),
+		theme:          theme,
+		styles:         styles,
 	}
 }
 
@@ -152,11 +145,11 @@ func (m ChatModel) View() string {
 %s
 %s
 	`,
-		primaryStyle.Width(50).Render(string(asciiArt)),
+		m.styles[primaryStyle].Width(50).Render(string(asciiArt)),
 		m.viewport.View(),
 		m.textarea.View(),
 	)
 
-	return borderStyle.Width(50).Render(view)
+	return m.styles[borderStyle].Width(50).Render(view)
 
 }

@@ -1,0 +1,12 @@
+# Clich theme template
+# Use hex colors in the same format as in the template
+# Rename this file into default_theme.yml
+# and move it to ~/.config/clich/ 
+# (Create the clich directory if not already existing)
+
+
+# Custom theme template v1
+# More options to come later on
+primary-color: "#32CD32"  
+secondary-color: "#767676" 
+highlight-color: "#FFFFFF"

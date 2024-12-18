@@ -2,6 +2,7 @@ package mainModel
 
 import (
 	"fmt"
+	"log"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -10,6 +11,7 @@ import (
 	chatUI "github.com/sunikka/clich-client/internal/models/chat"
 	"github.com/sunikka/clich-client/internal/models/logging"
 	loginUI "github.com/sunikka/clich-client/internal/models/login"
+	"github.com/sunikka/clich-client/internal/theme"
 	"github.com/sunikka/clich-client/internal/utils"
 )
 
@@ -20,6 +22,7 @@ type MainModel struct {
 	state viewTypes.SessionState
 	login tea.Model
 	chat  chatUI.ChatModel
+	theme *theme.Theme
 
 	logger logging.Model
 
@@ -30,12 +33,17 @@ type MainModel struct {
 }
 
 func NewMainModel(app *tea.Program) tea.Model {
+	theme, err := theme.Init()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	return MainModel{
 		app:    app,
 		state:  viewTypes.LoginView,
-		chat:   chatUI.NewChatModel(),
-		login:  loginUI.InitialModel(20),
+		chat:   chatUI.NewChatModel(theme),
+		theme:  theme,
+		login:  loginUI.InitialModel(20, theme),
 		logger: logging.NewLogWindow(100, 20),
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/sunikka/clich-client/internal/auth"
 	"github.com/sunikka/clich-client/internal/models/logging"
+	"github.com/sunikka/clich-client/internal/theme"
 )
 
 type (
@@ -30,26 +31,6 @@ const (
 	register
 )
 
-const (
-	marginLeft = 20
-)
-
-// Styling
-const (
-	primaryColor   = lipgloss.Color("#32CD32")
-	secondaryColor = lipgloss.Color("#767676")
-	highlightColor = lipgloss.Color("#FFFFFF")
-)
-
-var (
-	inputStyle     = lipgloss.NewStyle().Foreground(primaryColor)
-	continueStyle  = lipgloss.NewStyle().Foreground(secondaryColor)
-	highlightStyle = lipgloss.NewStyle().Foreground(highlightColor)
-	borderStyle    = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(1).BorderStyle(lipgloss.HiddenBorder())
-	marginStyle    = lipgloss.NewStyle().MarginRight(marginLeft)
-	paddingStyle   = lipgloss.NewStyle().PaddingRight(3).PaddingLeft(3)
-)
-
 // TODO: Maybe turn menu buttons into their own Tea Model?
 type UIElement struct {
 	Type       elementType
@@ -63,10 +44,12 @@ type Model struct {
 	WindowHeight int
 	logMessages  []string
 	Focused      int
+	theme        *theme.Theme
+	styles       []lipgloss.Style
 	Err          error
 }
 
-func InitialModel(windowHeight int) Model {
+func InitialModel(windowHeight int, theme *theme.Theme) Model {
 	elements := make([]UIElement, 4)
 
 	usernameInput := textinput.New()
@@ -90,6 +73,8 @@ func InitialModel(windowHeight int) Model {
 		Elements:     elements,
 		Focused:      0,
 		WindowHeight: windowHeight,
+		theme:        theme,
+		styles:       applyStyles(theme),
 		Err:          nil,
 	}
 }
@@ -147,18 +132,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
+
 	disclaimer := "DISCLAIMER: This is a test environment. There is no encryption for your messages. Do not use a password you use in other services and do not type anything sensitive in the chat!"
 
 	formWidth := 50
 
 	// TODO: Clean up the highlighting code
-	loginBtn := continueStyle.Width(20).Render(m.Elements[login].ButtonText)
+	loginBtn := m.styles[continueStyle].Width(20).Render(m.Elements[login].ButtonText)
 	if m.Focused == login {
-		loginBtn = highlightStyle.Width(20).Render(m.Elements[login].ButtonText)
+		loginBtn = m.styles[highlightStyle].Width(20).Render(m.Elements[login].ButtonText)
 	}
-	registerBtn := continueStyle.Width(20).Render(m.Elements[register].ButtonText)
+	registerBtn := m.styles[continueStyle].Width(20).Render(m.Elements[register].ButtonText)
 	if m.Focused == register {
-		registerBtn = highlightStyle.Width(20).Render(m.Elements[register].ButtonText)
+		registerBtn = m.styles[highlightStyle].Width(20).Render(m.Elements[register].ButtonText)
 	}
 
 	// Add fields and titles
@@ -179,22 +165,22 @@ func (m Model) View() string {
 
 		`,
 
-		inputStyle.Width(formWidth).Render("---------------- Login to CLICH ----------------"),
-		inputStyle.Width(formWidth-5).Render("Username"),
+		m.styles[inputStyle].Width(formWidth).Render("---------------- Login to CLICH ----------------"),
+		m.styles[inputStyle].Width(formWidth-5).Render("Username"),
 		m.Elements[username].TextInput.View(),
-		inputStyle.Width(formWidth-5).Render("Password"),
+		m.styles[inputStyle].Width(formWidth-5).Render("Password"),
 		m.Elements[password].TextInput.View(),
 		loginBtn,
 		registerBtn,
 		disclaimer)
-	view += continueStyle.Width(formWidth).Render("\n\n Press ESC or CTRL+C to exit... \n")
+	view += m.styles[continueStyle].Width(formWidth).Render("\n\n Press ESC or CTRL+C to exit... \n")
 
 	// Add styles (margin & border)
-	view = paddingStyle.Width(formWidth).Render(view)
-	view = marginStyle.Width(formWidth).Render(view)
-	view = borderStyle.Width(formWidth).Render(view)
+	view = m.styles[paddingStyle].Width(formWidth).Render(view)
+	view = m.styles[marginStyle].Width(formWidth).Render(view)
+	view = m.styles[borderStyle].Width(formWidth).Render(view)
 
-	return borderStyle.Width(formWidth + marginLeft).Height(m.WindowHeight).Render(view)
+	return m.styles[borderStyle].Width(formWidth + marginLeft).Height(m.WindowHeight).Render(view)
 }
 
 func (m *Model) nextInput() {
